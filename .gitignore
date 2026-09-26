@@ -30,12 +30,24 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# local configuration; includes example env files under the shared Git rule
 .env*
 
 # vercel
 .vercel
+.vercel-cli-temp/
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Private ledger material and generated exports
+/data/
+/exports/
+/backups/
+/receipts/
+*.csv
+*.tsv
+*.xlsx
+*.dump
+*.log

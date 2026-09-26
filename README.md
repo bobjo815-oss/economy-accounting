@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Study Finance Tracker Web
 
-## Getting Started
+## Local setup
 
-First, run the development server:
+1. Install dependencies with `pnpm install --frozen-lockfile`.
+2. Create an ignored `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from your own Supabase project.
+   Never use a service-role key or AI-provider key in browser configuration.
+3. Configure an owner account through Supabase Auth, then run `pnpm dev`
+   and open `/login`. Never put a password in this repository.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Database setup
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The initial schema and Row Level Security policies are in
+`supabase/migrations/20260922201832_initial_finance_schema.sql`, followed by
+`20260922202104_fix_function_search_path.sql`. The schema enables RLS on all
+12 application tables, restricts rows to their owner, and makes settlements and
+rate snapshots append-only. Configure Auth and disable public sign-ups for a
+single-owner deployment. Verify owner isolation in your target environment.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Check the target database's migration history before applying anything. Do not
+reapply existing migrations. Future migrations require review and testing.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Current boundary
 
-## Learn More
+`/workspace` is the authenticated app: accounts, categories, plans, immutable
+rate snapshots, actual settlements and linked reversals, split allocations,
+transfers, recurring proposals, review queue, calendar, forecast, budget report,
+and CSV export. `/` redirects to this protected workspace. `/demo` remains an
+older synthetic browser-local demo and is not the private ledger. Do not enter
+real financial records there.
 
-To learn more about Next.js, take a look at the following resources:
+The app is configured for no-AI operation. It has no model provider connection,
+no receipt storage, and no automatic bank or FX imports. Use only synthetic data
+until backup/export and the full browser workflow are verified. `pnpm test`,
+`pnpm lint`, `tsc --noEmit`, and `pnpm build` validate the local code.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Publication boundary
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This public repository contains application code, schema migrations, synthetic
+tests, and documentation. Credentials, deployment metadata, ledger exports,
+receipts, backups, local browser storage, and build output stay outside Git.
+Local checks do not verify a deployed database or an authenticated user workflow.
