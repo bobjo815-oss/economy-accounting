@@ -1,5 +1,6 @@
 import { parseAmountToMinor, safeMinorNumber, supportedCurrencies, type CurrencyCode } from "./money.ts";
 import { merchantAgrees } from "./statement-settlement.ts";
+import type { ActualRow } from "./records.ts";
 
 export type TransactionDraft = {
   id: string; user_id: string; source_key: string; occurred_on: string; description: string;
@@ -15,10 +16,23 @@ export type StatementEvidence = {
   status: "confirmed" | "approved" | "canceled"; original_amount_minor: number | null;
   currency_code: CurrencyCode | null; reported_krw_minor: number | null; evidence: Record<string, unknown>;
 };
-export function visibleDrafts(drafts: TransactionDraft[], options: { showArchived: boolean; showCompleted: boolean; query: string }) {
+export function receiptMatchedActual(draft: TransactionDraft, drafts: TransactionDraft[], statements: StatementEvidence[], actuals: ActualRow[]) {
+  if (draft.archived || draft.settled_actual_id || (!Array.isArray(draft.evidence?.items) && typeof draft.evidence?.receipt_hash !== "string")) return null;
+  const matches = statements.filter(statement => statement.status === "confirmed" && sameReceiptPayment(draft, statement) &&
+    (draft.statement_evidence_id === statement.id || isUniqueReceiptStatementPair(draft, statement, drafts, statements)))
+    .flatMap(statement => {
+      const statementDraft = drafts.find(row => row.source_key === `statement:${statement.source_key}`);
+      const actual = statementDraft?.settled_actual_id ? actuals.find(row => row.id === statementDraft.settled_actual_id &&
+        row.settlement_status === "settled" && !row.is_reversal && !row.correction_of_id && !row.replacement_of_id &&
+        row.direction === draft.direction && row.original_amount_minor === draft.original_amount_minor && row.currency_code === draft.currency_code) : undefined;
+      return actual ? [actual] : [];
+    });
+  return matches.length === 1 ? matches[0] : null;
+}
+export function visibleDrafts(drafts: TransactionDraft[], options: { showArchived: boolean; showCompleted: boolean; query: string }, actuals: ActualRow[] = [], statements: StatementEvidence[] = []) {
   const query = options.query.trim().toLowerCase();
   return drafts.filter(d => (options.showArchived || !d.archived) &&
-    (options.showCompleted || !d.settled_actual_id) &&
+    (options.showCompleted || (!d.settled_actual_id && !receiptMatchedActual(d, drafts, statements, actuals))) &&
     `${d.description} ${d.payment_method}`.toLowerCase().includes(query));
 }
 export function draftFields(input: { date: string; description: string; amount: string; currency: string; direction: string; paymentMethod: string; referenceKrw: string; notes: string }) {
@@ -45,7 +59,7 @@ function listedReceiptStatementCandidate(draft: TransactionDraft, statement: Sta
 }
 function sameReceiptPayment(draft: TransactionDraft, statement: StatementEvidence) {
   return statement.status !== "canceled" && statement.currency_code === draft.currency_code && statement.original_amount_minor === draft.original_amount_minor &&
-    Math.abs(Date.parse(statement.occurred_on) - Date.parse(draft.occurred_on)) <= 3 * 86400000 && merchantAgrees(statement.description, draft.description);
+    Math.abs(Date.parse(statement.occurred_on) - Date.parse(draft.occurred_on)) <= 3 * 86400000;
 }
 export function receiptCandidatesForStatement(statement: StatementEvidence, drafts: TransactionDraft[]) {
   return drafts.filter(draft => statement.status !== "canceled" && !draft.archived && draft.statement_evidence_id === null && hasReceiptEvidence(draft) &&
@@ -55,8 +69,33 @@ export function receiptCandidatesForDraft(draft: TransactionDraft, statements: S
   return statements.filter(statement => statement.status !== "canceled" &&
     (listedReceiptStatementCandidate(draft, statement) || sameReceiptPayment(draft, statement)));
 }
+export function verifiedReceiptStatementMatch(draft: TransactionDraft, drafts: TransactionDraft[], statements: StatementEvidence[]) {
+  if (!Array.isArray(draft.evidence.items)) return null;
+  const candidates = receiptCandidatesForDraft(draft, statements).filter(statement =>
+    statement.status !== "canceled" && sameReceiptPayment(draft, statement) &&
+    isUniqueReceiptStatementPair(draft, statement, drafts, statements));
+  return candidates.length === 1 ? candidates[0] : null;
+}
+export function statementRowsForReconciliation(statements: StatementEvidence[], drafts: TransactionDraft[], includeLinked = false) {
+  return statements.filter(statement => {
+    if (statement.status === "canceled") return false;
+    const linked = drafts.some(draft => draft.statement_evidence_id === statement.id || draft.source_key === `statement:${statement.source_key}`);
+    const verifiedReceiptMatch = drafts.some(draft => verifiedReceiptStatementMatch(draft, drafts, statements)?.id === statement.id);
+    if ((linked || verifiedReceiptMatch) && !includeLinked) return false;
+    return statement.status === "confirmed" || receiptCandidatesForStatement(statement, drafts).length > 0;
+  });
+}
 export function isUniqueReceiptStatementPair(draft: TransactionDraft, statement: StatementEvidence, drafts: TransactionDraft[], statements: StatementEvidence[]) {
-  return receiptCandidatesForStatement(statement, drafts).length === 1 && receiptCandidatesForDraft(draft, statements).length === 1;
+  // Candidate-source metadata and merchant strings are suggestions, not identity.
+  // The payable receipt total is the purchase amount; OCR line-item sums can
+  // legitimately differ because of discounts, tax, or omitted/misread lines.
+  const receiptMatches = drafts.filter(row => !row.archived && !row.settled_actual_id && hasReceiptEvidence(row) && sameReceiptPayment(row, statement));
+  const merchantReceipts = receiptMatches.filter(row => merchantAgrees(row.description, statement.description));
+  const preferredReceipts = merchantReceipts.length ? merchantReceipts : receiptMatches;
+  const statementMatches = statements.filter(row => row.status !== "canceled" && sameReceiptPayment(draft, row));
+  const merchantStatements = statementMatches.filter(row => merchantAgrees(draft.description, row.description));
+  const preferredStatements = merchantStatements.length ? merchantStatements : statementMatches;
+  return preferredReceipts.length === 1 && preferredStatements.length === 1 && preferredReceipts[0].id === draft.id && preferredStatements[0].id === statement.id;
 }
 export function draftForSettlement(draft: TransactionDraft) {
   if (draft.archived || draft.settled_actual_id) return null;

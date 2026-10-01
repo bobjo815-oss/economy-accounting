@@ -29,6 +29,9 @@ test("unknown items do not silently consume the entire debit; source objects are
   assert.equal(receiptField({valueString:"Synthetic merchant"}),"Synthetic merchant");
   assert.equal(merchantAgrees("Example Shop","EXAMPLE SHOP 123"),true);
   assert.equal(merchantAgrees("Example Shop","Other Shop"),false);
+  assert.equal(merchantAgrees("Wm Morrison Supermarkets Ltd BD3 7DL", "MORRISONS SHEFFIELD -"),true);
+  assert.equal(merchantAgrees("Boots UK Limited", "BOOTS,BROOMHILL"),true);
+  assert.equal(merchantAgrees("Sainsbury's Supermarkets Ltd", "SAINSBURYS"),true);
 });
 test("receipt item reconciliation includes discounts and keeps missing line amounts explicit", () => {
   assert.deepEqual(receiptItemTotal([{ TotalPrice: "14.85" }, { Description: "Discount", TotalPrice: "-1.00" }], "GBP"), {

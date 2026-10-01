@@ -59,8 +59,12 @@ export function allocateReceiptItems(items: unknown[], original: number, currenc
   for (let i = 0; i < Number(remaining); i++) ranked[i].amount += BigInt(1);
   return allocated.map(row => ({ label: row.label, unitemized: row.unitemized, sourceIndex: row.sourceIndex, amountKrw: safeMinorNumber(row.amount)! }));
 }
-function merchantKey(value: string) { return value.normalize("NFKC").toLowerCase().replace(/[^a-z0-9가-힣]/g, ""); }
+function merchantKey(value: string) {
+  return value.normalize("NFKC").toLowerCase().split(/[^a-z0-9가-힣]+/)
+    .map(token => token.length > 4 && token.endsWith("s") ? token.slice(0, -1) : token)
+    .filter(token => token.length >= 3 && !["limited", "ltd", "shop", "store", "supermarket", "sheffield", "branch"].includes(token));
+}
 export function merchantAgrees(left: string, right: string) {
-  const a = merchantKey(left), b = merchantKey(right);
-  return a.length >= 4 && b.length >= 4 && (a === b || a.startsWith(b) || b.startsWith(a));
+  const a = merchantKey(left), b = new Set(merchantKey(right));
+  return a.some(token => b.has(token) || [...b].some(other => token.length >= 5 && other.length >= 5 && (token.startsWith(other) || other.startsWith(token))));
 }
