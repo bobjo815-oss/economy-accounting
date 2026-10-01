@@ -32,3 +32,11 @@ test("corrections reject invalid dates, money, accounts, categories and incomple
   assert.equal(result?.p_actual.category_id,null);
   assert.deepEqual(result?.p_splits.map(s => s.original_amount_minor),[200,250]);
 });
+
+test("different currency payment or refund amounts never invent a separate fee", () => {
+  const fields = correctionFields(original,data);
+  assert.equal(correctionPayload({ ...fields,settled: "9000" },data)?.p_actual.explicit_fee_minor,0);
+  assert.equal(correctionPayload({ ...fields,kind: "income",categoryId: "",settled: "7500" },data)?.p_actual.explicit_fee_minor,0);
+  assert.equal(correctionPayload({ ...fields,fee: "100" },data)?.p_actual.explicit_fee_minor,100);
+  assert.equal(original.explicit_fee_minor,0);
+});
