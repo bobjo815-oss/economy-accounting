@@ -19,6 +19,7 @@ import { workspacePages, workspaceHref, type WorkspaceSection } from "@/lib/fina
 import { HelpTip, NavIcon, WorkspaceNav } from "./navigation-ui";
 import { sortWorkspaceLists, type WorkspaceSortOrders } from "@/lib/finance/sorting";
 import { starterCategories } from "@/lib/finance/starter-categories";
+import FirstUseGuide from "./first-use-guide";
 
 export default function Workspace({ userId, section = "overview" }: { userId: string; section?: WorkspaceSection }) {
   const { t, locale } = useLanguage();
@@ -85,6 +86,7 @@ export default function Workspace({ userId, section = "overview" }: { userId: st
   </main>;
 
   return <main className="min-h-screen bg-slate-50 text-slate-950">
+    <FirstUseGuide userId={userId} />
     <a href="#page-content" className="sr-only focus:not-sr-only focus:block focus:p-3">{text("본문으로 건너뛰기", "Skip to content")}</a>
     <div className="mx-auto grid w-full max-w-[1800px] gap-7 px-6 py-6 lg:grid-cols-[230px_minmax(0,1fr)] xl:px-10">
       <WorkspaceNav section={section} />

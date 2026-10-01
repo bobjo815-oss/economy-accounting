@@ -4,7 +4,7 @@ import { useLanguage } from "@/lib/i18n/provider";
 
 import { Fragment, useMemo, useState, type FormEvent } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatMinor, parseAmountToMinor, parseRate, safeMinorNumber, supportedCurrencies, type CurrencyCode } from "@/lib/finance/money";
+import { decimalAmountFromMinor, formatMinor, parseAmountToMinor, parseRate, safeMinorNumber, type CurrencyCode } from "@/lib/finance/money";
 import { normalizeDescription, suggestCategory } from "@/lib/finance/suggestion";
 import type { ActualRow, CashDirection, EntryKind, WorkspaceData } from "@/lib/finance/records";
 import ReceiptImporter from "./receipt-importer";
@@ -13,7 +13,7 @@ import type { TransactionDraft } from "@/lib/finance/transaction-drafts";
 import { effectiveKrwRate } from "@/lib/finance/statement-settlement";
 import ActualInlineEditor from "./actual-inline-editor";
 import SortControl from "./sort-control";
-import TransactionWalkthrough from "./transaction-walkthrough";
+import { CurrencySelect } from "./currency-select";
 
 const kinds: { value: EntryKind; label: string; direction: CashDirection }[] = [
   { value: "income", label: "Income", direction: "inflow" },
@@ -37,7 +37,7 @@ export default function ActualsPanel({ data, userId, supabase, refresh, draft, c
   const [date, setDate] = useState(() => draft?.occurred_on ?? localDate(data.profile?.timezone));
   const [description, setDescription] = useState(draft?.description ?? "");
   const [kind, setKind] = useState<EntryKind>(draft?.direction === "inflow" ? "income" : "expense");
-  const [originalAmount, setOriginalAmount] = useState(draft ? String(draft.original_amount_minor / (draft.currency_code === "KRW" ? 1 : 100)) : "");
+  const [originalAmount, setOriginalAmount] = useState(draft ? decimalAmountFromMinor(draft.original_amount_minor, draft.currency_code) : "");
   const [originalCurrency, setOriginalCurrency] = useState<CurrencyCode>(draft?.currency_code ?? "GBP");
   const [accountId, setAccountId] = useState(draft?.account_id ?? "");
   const [settledAmount, setSettledAmount] = useState(draft?.confirmed_debit_krw ? String(draft.confirmed_debit_krw) : "");
@@ -156,7 +156,6 @@ export default function ActualsPanel({ data, userId, supabase, refresh, draft, c
   return <section id="actuals" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
     <h2 className="text-lg font-semibold">{compact ? (locale === "ko" ? "거래 확정" : "Confirm transaction") : t("Actual settlements")}</h2>
     <p className="mt-1 text-sm text-slate-500">{t("Enter the original charge and the final amount on your account statement. A fee already included in that final amount is not added again.")}</p>
-    {!compact && <TransactionWalkthrough userId={userId} onChooseIncome={() => setKind("income")} />}
     <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {!compact && <ReceiptImporter blocked={Boolean(draft) || activeImport !== null} onApply={(draft, onSaved, onCancelled) => {
         if (draft.merchant) setDescription(draft.merchant);
@@ -194,7 +193,7 @@ export default function ActualsPanel({ data, userId, supabase, refresh, draft, c
       <label className="text-sm">{t("Settlement date")}<input required type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
       <label className="text-sm">{t("Type")}<select value={kind} onChange={(event) => setKind(event.target.value as EntryKind)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2">{kinds.map((item) => <option key={item.value} value={item.value}>{t(item.label)}</option>)}</select></label>
       <label className="text-sm">{t("Original amount")}<input required inputMode="decimal" value={originalAmount} onChange={(event) => setOriginalAmount(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
-      <label className="text-sm">{t("Original currency")}<select value={originalCurrency} onChange={(event) => { setOriginalCurrency(event.target.value as CurrencyCode); setBankRate(""); }} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2">{supportedCurrencies.map((code) => <option key={code}>{code}</option>)}</select></label>
+      <label className="text-sm">{t("Original currency")}<CurrencySelect value={originalCurrency} onChange={(code) => { setOriginalCurrency(code); setBankRate(""); }} locale={locale} className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2" /></label>
       <label className="text-sm">{t("Account")}<select required value={accountId} onChange={(event) => { setAccountId(event.target.value); setBankRate(""); }} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2"><option value="">{t("Choose account")}</option>{data.accounts.filter((account) => account.is_active).map((account) => <option key={account.id} value={account.id}>{account.name} ({account.currency_code})</option>)}</select></label>
       <label className="text-sm">{t("Final account amount")}{" "}{selectedAccount ? `(${selectedAccount.currency_code})` : ""}<input required inputMode="decimal" value={settledAmount} onChange={(event) => setSettledAmount(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
       <label className="text-sm">{t("Fee treatment")}<select value={feeTreatment} onChange={(event) => setFeeTreatment(event.target.value as "included" | "separate")} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2"><option value="included">{t("Included in final amount / none")}</option><option value="separate">{t("Charged separately")}</option></select></label>

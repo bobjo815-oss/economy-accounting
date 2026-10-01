@@ -5,6 +5,7 @@ test("derived rate preserves foreign units and cannot manufacture a missing debi
   assert.equal(effectiveKrwRate(1000,"GBP",18000),"1800.00000000");
   assert.equal(effectiveKrwRate(0,"GBP",18000),null);
   assert.equal(effectiveKrwRate(1000,"USD",0),null);
+  assert.equal(effectiveKrwRate(1234,"KWD",18000),"14586.70988655");
 });
 test("item allocations distribute a final discount and every won exactly once", () => {
   const items = [{Description:"A",TotalPrice:"8.00"},{Description:"B",TotalPrice:"7.00"},{Description:"Discount",TotalPrice:"-1.00"}];

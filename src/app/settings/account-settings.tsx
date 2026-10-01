@@ -4,12 +4,12 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/provider";
 import { createClient } from "@/lib/supabase/client";
-import { supportedCurrencies, type CurrencyCode } from "@/lib/finance/money";
+import { type CurrencyCode } from "@/lib/finance/money";
+import { CurrencySelect } from "@/app/workspace/currency-select";
 import { parseProfileSettings } from "@/lib/finance/profile-settings";
 import { recoveryRequestRedirect } from "@/lib/auth/recovery-redirect";
 import type { ProfileRow } from "@/lib/finance/records";
 import { WorkspaceNav } from "../workspace/navigation-ui";
-import { walkthroughKey } from "../workspace/transaction-walkthrough";
 
 export default function AccountSettings({ userId, email, providers, profile }: {
   userId: string; email: string; providers: string[]; profile: ProfileRow | null;
@@ -67,20 +67,16 @@ export default function AccountSettings({ userId, email, providers, profile }: {
         <div><dt className="text-sm text-slate-500">{text("로그인 방식", "Sign-in method")}</dt><dd>{providers.map((p) => p === "google" ? "Google" : p === "email" ? text("이메일", "Email") : p).join(" · ")}</dd></div></dl>
       {providers.includes("google") && <p className="mt-4 text-sm text-slate-600">{text("Google 로그인 비밀번호와 보안 설정은 Google 계정에서 관리합니다.", "Manage your Google sign-in password and security in your Google account.")}</p>}
       {providers.includes("email") && <button type="button" disabled={pending} onClick={() => void resetPassword()} className="mt-4 underline disabled:opacity-50">{text("이메일 계정 비밀번호 재설정", "Reset email-account password")}</button>}
+      <a href="/settings/security" className="mt-4 block font-medium text-teal-800 underline">{text("2단계 인증 및 보안 설정", "Two-step verification and security")}</a>
     </section>
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <h2 className="text-lg font-semibold">{text("화면 언어", "Display language")}</h2>
       <label className="mt-3 block text-sm">{text("언어 (이 브라우저에 저장)", "Language (saved in this browser)")}<select value={locale} onChange={(e) => setLocale(e.target.value === "en" ? "en" : "ko")} className={input}><option value="ko">한국어</option><option value="en">English</option></select></label>
     </section>
-    <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-lg font-semibold">{text("사용 안내", "Walkthroughs")}</h2>
-      <p className="mt-2 text-sm text-slate-600">{text("처음 거래를 입력할 때 나오는 수입 안내를 다시 볼 수 있습니다.", "Replay the income walkthrough shown when you first open Transactions.")}</p>
-      <button type="button" onClick={() => { window.localStorage.removeItem(walkthroughKey(userId)); router.push("/workspace/actuals"); }} className="mt-4 rounded-lg border border-teal-700 px-4 py-2 text-sm font-medium text-teal-900">{text("수입 입력 안내 다시 보기", "Replay income walkthrough")}</button>
-    </section>
     </div>
     <form onSubmit={save} className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <h2 className="text-lg font-semibold">{text("자금 관리 설정", "Finance preferences")}</h2>
-      <label className="block text-sm">{text("기준 통화", "Reporting currency")}<select className={input} value={currency} onChange={(e) => setCurrency(e.target.value as CurrencyCode)}>{supportedCurrencies.map((code) => <option key={code}>{code}</option>)}</select></label>
+      <label className="block text-sm">{text("기준 통화", "Reporting currency")}<CurrencySelect className={input} value={currency} locale={locale} onChange={setCurrency} /></label>
       <label className="block text-sm">{text("최소 유지 잔액", "Safety balance")} ({currency})<input required inputMode="decimal" className={input} value={safety} onChange={(e) => setSafety(e.target.value)} /></label>
       <label className="block text-sm">{text("시간대", "Timezone")}<input required list="timezones" className={input} value={timezone} onChange={(e) => setTimezone(e.target.value)} /><datalist id="timezones"><option value="Europe/London" /><option value="Asia/Seoul" /><option value="UTC" /></datalist></label>
       <p className="text-sm text-slate-600">{text("기준 통화를 바꿔도 기존 계획의 금액과 환율 기록은 유지됩니다. 새 기준 통화로 사용할 최소 잔액을 확인해 주세요.", "Existing plan amounts and FX snapshots keep their original currency. Confirm the safety balance for your selected currency.")}</p>

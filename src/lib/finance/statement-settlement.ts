@@ -1,10 +1,10 @@
-import { parseSignedAmountToMinor, safeMinorNumber, type CurrencyCode } from "./money.ts";
+import { minorUnitFactor, parseSignedAmountToMinor, safeMinorNumber, type CurrencyCode } from "./money.ts";
 
 export type DebitConfirmation = { statement_evidence_id: string; amount_krw_minor: number };
 export function effectiveKrwRate(original: number, currency: CurrencyCode, debit: number) {
   if (!Number.isSafeInteger(original) || original <= 0 || !Number.isSafeInteger(debit) || debit <= 0) return null;
   const scale = BigInt(100000000);
-  const rate = (BigInt(debit) * BigInt(currency === "KRW" ? 1 : 100) * scale + BigInt(original) / BigInt(2)) / BigInt(original);
+  const rate = (BigInt(debit) * minorUnitFactor(currency) * scale + BigInt(original) / BigInt(2)) / BigInt(original);
   return `${rate / scale}.${String(rate % scale).padStart(8, "0")}`;
 }
 export function receiptField(value: unknown): string {

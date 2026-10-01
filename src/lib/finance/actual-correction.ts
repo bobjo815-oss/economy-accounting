@@ -1,4 +1,4 @@
-import { parseAmountToMinor, safeMinorNumber, supportedCurrencies, type CurrencyCode } from "./money.ts";
+import { decimalAmountFromMinor, parseAmountToMinor, safeMinorNumber, supportedCurrencies, type CurrencyCode } from "./money.ts";
 import type { ActualRow, WorkspaceData, EntryKind } from "./records.ts";
 
 export type CorrectionFields = { date: string; description: string; amount: string; currency: string; accountId: string; settled: string; fee: string; categoryId: string; kind: EntryKind; planId: string; splits: { categoryId: string; amount: string }[] };
@@ -10,7 +10,7 @@ export function storedCorrectionFields(value: unknown): CorrectionFields | null 
   return fields as unknown as CorrectionFields;
 }
 export function correctionFields(actual: ActualRow, data: WorkspaceData): CorrectionFields {
-  const decimal = (minor: number, currency: CurrencyCode) => String(minor / (currency === "KRW" ? 1 : 100));
+  const decimal = (minor: number, currency: CurrencyCode) => decimalAmountFromMinor(minor, currency);
   return { date: actual.occurred_on, description: actual.description, amount: decimal(actual.original_amount_minor, actual.currency_code), currency: actual.currency_code,
     accountId: actual.account_id ?? "", settled: decimal(actual.settlement_amount_minor, actual.settlement_currency), fee: decimal(actual.explicit_fee_minor, actual.settlement_currency),
     categoryId: actual.category_id ?? "", kind: actual.entry_kind, planId: actual.plan_id ?? "", splits: data.splits.filter(s => s.actual_transaction_id === actual.id).map(s => ({ categoryId: s.category_id, amount: decimal(s.original_amount_minor, actual.currency_code) })) };

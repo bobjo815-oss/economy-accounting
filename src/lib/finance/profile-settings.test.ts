@@ -8,7 +8,8 @@ test("settings validate currency, minor units, and timezone", () => {
   assert.deepEqual(parseProfileSettings("GBP", "123.45", "Asia/Seoul"), { base_currency: "GBP", safety_balance_minor: 12345, timezone: "Asia/Seoul" });
   assert.equal(parseProfileSettings("KRW", "1.5", "UTC"), null);
   assert.equal(parseProfileSettings("GBP", "-1", "UTC"), null);
-  assert.equal(parseProfileSettings("EUR", "1", "UTC"), null);
+  assert.deepEqual(parseProfileSettings("EUR", "1", "UTC"), { base_currency: "EUR", safety_balance_minor: 100, timezone: "UTC" });
+  assert.deepEqual(parseProfileSettings("KWD", "1.234", "UTC"), { base_currency: "KWD", safety_balance_minor: 1234, timezone: "UTC" });
   assert.equal(parseProfileSettings("GBP", "1", "Invalid/Zone"), null);
 });
 

@@ -11,6 +11,7 @@ import {
   supportedCurrencies,
   type CurrencyCode,
 } from "@/lib/finance/money";
+import { CurrencySelect } from "../workspace/currency-select";
 
 type Direction = "Outflow" | "Inflow";
 type Draft = {
@@ -222,9 +223,7 @@ export default function Home() {
                 <input value={title} onChange={(event) => handleTitleChange(event.target.value)} placeholder="예: Market groceries" className="w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-white/50" />
                 <div className="grid grid-cols-[1fr_88px] gap-2">
                   <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" placeholder="금액" className="w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-white/50" />
-                  <select value={currency} onChange={(event) => setCurrency(event.target.value as CurrencyCode)} className="rounded-lg border border-white/15 bg-slate-800 px-2 py-2.5 text-sm">
-                    {supportedCurrencies.map((item) => <option key={item}>{item}</option>)}
-                  </select>
+                  <CurrencySelect value={currency} onChange={setCurrency} locale="en" className="rounded-lg border border-white/15 bg-slate-800 px-2 py-2.5 text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="rounded-lg border border-white/15 bg-white/10 px-3 py-2.5 text-sm" />
@@ -235,9 +234,7 @@ export default function Home() {
                 </div>
                 <label className="block text-xs text-slate-300">
                   Reporting base currency
-                  <select value={baseCurrency} onChange={(event) => setBaseCurrency(event.target.value as CurrencyCode)} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-800 px-2 py-2.5 text-sm">
-                    {supportedCurrencies.map((item) => <option key={item}>{item}</option>)}
-                  </select>
+                  <CurrencySelect value={baseCurrency} onChange={setBaseCurrency} locale="en" className="w-full rounded-lg border border-white/15 bg-slate-800 px-2 py-2.5 text-sm" />
                 </label>
                 {requiresRate && <div className="grid grid-cols-2 gap-2">
                   <label className="text-xs text-slate-300">Baseline FX rate<input required value={baselineRate} onChange={(event) => setBaselineRate(event.target.value)} inputMode="decimal" placeholder={`1 ${currency} = ? ${baseCurrency}`} className="mt-1 w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2.5 text-sm" /></label>

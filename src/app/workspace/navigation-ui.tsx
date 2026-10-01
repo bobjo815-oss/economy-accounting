@@ -17,12 +17,13 @@ const paths: Record<string, string> = {
   recurring: "M4 10a8 8 0 0 1 14-5l3 3M21 3v5h-5M20 14a8 8 0 0 1-14 5l-3-3m0 5v-5h5",
   export: "M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5",
   settings: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2",
+  manual: "M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Zm0 0V21m4-14h8m-8 4h8",
   logout: "M10 4H4v16h6m4-12 4 4-4 4m-6-4h12",
 };
 export function NavIcon({ name }: { name: string }) {
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0"><path d={paths[name] ?? paths.overview} /></svg>;
 }
-export function WorkspaceNav({ section }: { section: WorkspaceSection | "settings" }) {
+export function WorkspaceNav({ section }: { section: WorkspaceSection | "settings" | "manual" }) {
   const { locale } = useLanguage();
   const groups = [{ id: "overview", ko: "한눈에 보기", en: "Overview" }, { id: "record", ko: "기록하기", en: "Record" }, { id: "track", ko: "살펴보기", en: "Track" }, { id: "manage", ko: "관리하기", en: "Manage" }];
   return <aside className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 lg:sticky lg:top-5 lg:max-h-[calc(100vh-40px)] lg:min-h-[calc(100vh-40px)] lg:self-start lg:overflow-y-auto">
@@ -31,6 +32,7 @@ export function WorkspaceNav({ section }: { section: WorkspaceSection | "setting
       {groups.map((group) => <div key={group.id}><p className="mb-2 px-3 text-xs font-semibold tracking-wide text-slate-500">{group[locale]}</p><div className="flex flex-wrap gap-1 lg:block lg:space-y-1">{workspacePages.filter((page) => page.group === group.id && (!('navigation' in page) || page.navigation !== false)).map((page) => <Link key={page.id} href={workspaceHref(page.id)} aria-current={section === page.id ? "page" : undefined} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${section === page.id ? "bg-teal-50 text-teal-900 ring-1 ring-teal-200" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}><NavIcon name={page.id} />{page[locale]}</Link>)}</div></div>)}
     </nav>
     <div className="mt-auto border-t border-slate-200 pt-3">
+      <Link href={section === "manual" ? "/manual?view=all" : `/manual?context=${section}`} aria-current={section === "manual" ? "page" : undefined} className={`mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${section === "manual" ? "bg-teal-50 text-teal-900" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}><NavIcon name="manual" />{locale === "ko" ? "사용설명서" : "User guide"}</Link>
       <Link href="/settings" aria-current={section === "settings" ? "page" : undefined} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${section === "settings" ? "bg-teal-50 text-teal-900" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}><NavIcon name="settings" />{locale === "ko" ? "설정" : "Settings"}</Link>
     </div>
   </aside>;

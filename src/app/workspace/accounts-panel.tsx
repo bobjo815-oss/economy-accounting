@@ -3,7 +3,8 @@ import { useLanguage } from "@/lib/i18n/provider";
 
 import { useState, type FormEvent } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatMinor, parseSignedAmountToMinor, safeMinorNumber, supportedCurrencies, type CurrencyCode } from "@/lib/finance/money";
+import { decimalAmountFromMinor, formatMinor, parseSignedAmountToMinor, safeMinorNumber, type CurrencyCode } from "@/lib/finance/money";
+import { CurrencySelect } from "./currency-select";
 import type { AccountRow } from "@/lib/finance/records";
 import SortControl from "./sort-control";
 
@@ -69,9 +70,9 @@ export default function AccountsPanel({ accounts, userId, supabase, refresh, sor
     <h2 className="text-lg font-semibold">{t("Accounts")}</h2>
     <p className="mt-1 text-sm text-slate-500">{text("이름과 시작 잔액을 수정할 수 있습니다. 더 이상 쓰지 않는 계좌는 사용 중지하고 나중에 복원하세요. 거래 기록은 삭제되지 않습니다.","Edit names and opening balances. Deactivate unused accounts and restore them later. Transaction history is retained.")}</p>
     {editing && <p className="mt-3 rounded bg-amber-50 p-3 text-sm">{text("계좌 수정 중: 시작 잔액을 바꾸면 현재 잔액과 예측도 바뀝니다. 통화는 기존 금액의 의미를 보존하기 위해 변경하지 않습니다. 다른 통화는 새 계좌로 등록하세요.","Editing: changing the opening balance changes balances and forecasts. Currency remains fixed to preserve existing amounts; add a separate account for another currency.")}</p>}
-    <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-[1fr_100px_130px_auto]">
+    <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-[1fr_220px_160px_auto]">
       <label className="text-sm">{t("Name")}<input required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
-      <label className="text-sm">{t("Currency")}<select disabled={Boolean(editing)} value={currency} onChange={(event) => setCurrency(event.target.value as CurrencyCode)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-2 py-2">{supportedCurrencies.map((code) => <option key={code}>{code}</option>)}</select></label>
+      <label className="text-sm">{t("Currency")}<CurrencySelect disabled={Boolean(editing)} value={currency} onChange={setCurrency} locale={locale} className="block w-full rounded-lg border border-slate-300 bg-white px-2 py-2" /></label>
       <label className="text-sm">{t("Opening balance")}<input required inputMode="decimal" value={openingBalance} onChange={(event) => setOpeningBalance(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
       <div className="flex items-end"><button disabled={pending} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">{editing ? text("수정 저장","Save changes") : t("Add")}</button>{editing && <button type="button" onClick={() => { setEditing(null); setName(""); setOpeningBalance("0"); }} className="ml-3 underline">{text("취소","Cancel")}</button>}</div>
     </form>
@@ -83,7 +84,7 @@ export default function AccountsPanel({ accounts, userId, supabase, refresh, sor
       { value: "balance-asc", label: text("시작 잔액 · 통화별 낮은 순", "Opening balance · low within currency") },
       { value: "balance-desc", label: text("시작 잔액 · 통화별 높은 순", "Opening balance · high within currency") },
     ]} /></div>
-    <ul className="mt-5 divide-y divide-slate-100">{accounts.filter(a => showInactive || a.is_active).map((account) => <li key={account.id} className="flex justify-between gap-4 py-3 text-sm"><span>{account.name}{!account.is_active && <span className="ml-2 text-slate-500">{text("사용 중지","Inactive")}</span>}</span><span className="font-medium">{formatMinor(BigInt(account.opening_balance_minor), account.currency_code)}</span><div className="flex gap-3"><button type="button" disabled={pending || editing !== null} onClick={() => { setEditing(account); setName(account.name); setCurrency(account.currency_code); setOpeningBalance(String(account.opening_balance_minor / (account.currency_code === "KRW" ? 1 : 100))); setMessage(""); }} className="underline">{text("수정","Edit")}</button><button type="button" disabled={pending || editing !== null} onClick={() => void toggle(account)} className="underline">{account.is_active ? text("사용 중지","Deactivate") : text("복원","Restore")}</button><button type="button" disabled={pending || editing !== null} onClick={() => void remove(account)} className="text-red-700 underline">{text("삭제","Delete")}</button></div></li>)}</ul>
+    <ul className="mt-5 divide-y divide-slate-100">{accounts.filter(a => showInactive || a.is_active).map((account) => <li key={account.id} className="flex justify-between gap-4 py-3 text-sm"><span>{account.name}{!account.is_active && <span className="ml-2 text-slate-500">{text("사용 중지","Inactive")}</span>}</span><span className="font-medium">{formatMinor(BigInt(account.opening_balance_minor), account.currency_code)}</span><div className="flex gap-3"><button type="button" disabled={pending || editing !== null} onClick={() => { setEditing(account); setName(account.name); setCurrency(account.currency_code); setOpeningBalance(decimalAmountFromMinor(account.opening_balance_minor, account.currency_code)); setMessage(""); }} className="underline">{text("수정","Edit")}</button><button type="button" disabled={pending || editing !== null} onClick={() => void toggle(account)} className="underline">{account.is_active ? text("사용 중지","Deactivate") : text("복원","Restore")}</button><button type="button" disabled={pending || editing !== null} onClick={() => void remove(account)} className="text-red-700 underline">{text("삭제","Delete")}</button></div></li>)}</ul>
     {accounts.length === 0 && <p className="mt-5 text-sm text-slate-500">{t("Add an account to begin tracking cash.")}</p>}
   </section>;
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { startTransition, useEffect, useState, type FormEvent } from "react";
-import { formatMinor, parseAmountToMinor, supportedCurrencies, type CurrencyCode } from "@/lib/finance/money";
+import { formatMinor, parseAmountToMinor, type CurrencyCode } from "@/lib/finance/money";
+import { CurrencySelect } from "./workspace/currency-select";
 import {
   actualCostMinor,
   cashEffectMinor,
@@ -148,9 +149,9 @@ export default function ActualsPanel({ plans }: { plans: PlanOption[] }) {
       <label className="text-sm lg:col-span-2">Description<input required maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
       <label className="text-sm">Cash direction<select value={direction} onChange={(event) => setDirection(event.target.value as Direction)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2"><option>Outflow</option><option>Inflow</option></select></label>
       <label className="text-sm">Original amount<input required inputMode="decimal" value={originalAmount} onChange={(event) => setOriginalAmount(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
-      <label className="text-sm">Original currency<select value={originalCurrency} onChange={(event) => setOriginalCurrency(event.target.value as CurrencyCode)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2">{supportedCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></label>
+      <label className="text-sm">Original currency<CurrencySelect value={originalCurrency} onChange={setOriginalCurrency} locale="en" className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2" /></label>
       <label className="text-sm">Final account amount<input required inputMode="decimal" value={settlementAmount} onChange={(event) => setSettlementAmount(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
-      <label className="text-sm">Account currency<select value={settlementCurrency} onChange={(event) => setSettlementCurrency(event.target.value as CurrencyCode)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2">{supportedCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></label>
+      <label className="text-sm">Account currency<CurrencySelect value={settlementCurrency} onChange={setSettlementCurrency} locale="en" className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2" /></label>
       <label className="text-sm">Fee on statement<select value={feeTreatment} onChange={(event) => setFeeTreatment(event.target.value as FeeTreatment)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2"><option value="included">Included in final amount</option><option value="separate">Separate charge</option></select></label>
       {feeTreatment === "separate" && <label className="text-sm">Separate fee ({settlementCurrency})<input inputMode="decimal" value={separateFee} onChange={(event) => setSeparateFee(event.target.value)} placeholder="0" className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>}
       {originalCurrency !== settlementCurrency && <label className="text-sm">Bank FX rate, if shown<input inputMode="decimal" value={observedFxRate} onChange={(event) => setObservedFxRate(event.target.value)} placeholder={`1 ${originalCurrency} = ? ${settlementCurrency}`} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>}

@@ -3,7 +3,7 @@ import { Fragment, useCallback, useEffect, useState, startTransition, type FormE
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/provider";
-import { formatMinor, supportedCurrencies } from "@/lib/finance/money";
+import { decimalAmountFromMinor, formatMinor, type CurrencyCode } from "@/lib/finance/money";
 import { localDate } from "@/lib/finance/local-date";
 import { draftFields, statementCandidates, visibleDrafts, type TransactionDraft, type StatementEvidence } from "@/lib/finance/transaction-drafts";
 import type { WorkspaceData } from "@/lib/finance/records";
@@ -13,8 +13,9 @@ import ActualsPanel from "./actuals-panel";
 import ActualInlineEditor from "./actual-inline-editor";
 import SortControl from "./sort-control";
 import { compareBigInt, compareText, sortRows } from "@/lib/finance/sorting";
+import { CurrencySelect } from "./currency-select";
 
-const decimal = (amount: number, currency: "GBP" | "USD" | "KRW") => currency === "KRW" ? String(amount) : `${Math.floor(amount / 100)}.${String(amount % 100).padStart(2, "0")}`;
+const decimal = (amount: number, currency: CurrencyCode) => decimalAmountFromMinor(amount, currency);
 const blank = () => ({ date: "", description: "", amount: "", currency: "GBP", direction: "outflow", paymentMethod: "", referenceKrw: "", notes: "", accountId: "", categoryId: "", statementId: "" });
 type Props = { supabase: SupabaseClient; userId: string; data: WorkspaceData; blocked: boolean; revision?: number; refresh: () => Promise<void> };
 export default function TransactionDraftsPanel({ supabase, userId, data, blocked, revision = 0, refresh }: Props) {
@@ -127,7 +128,7 @@ export default function TransactionDraftsPanel({ supabase, userId, data, blocked
       <label className="text-sm lg:col-span-2">{text("상점 / 내용 *", "Merchant / description *")}<input required disabled={frozen} maxLength={500} value={fields.description} onChange={e => change("description", e.target.value)} className="mt-1 w-full rounded border p-2 disabled:bg-slate-100" /></label>
       <label className="text-sm">{text("수입 / 지출", "Direction")}<select disabled={frozen} value={fields.direction} onChange={e => change("direction", e.target.value)} className="mt-1 w-full rounded border p-2"><option value="outflow">{text("지출", "Expense")}</option><option value="inflow">{text("수입", "Income")}</option></select></label>
       <label className="text-sm">{text("원래 금액 *", "Original amount *")}<input required disabled={frozen} inputMode="decimal" value={fields.amount} onChange={e => change("amount", e.target.value)} className="mt-1 w-full rounded border p-2 disabled:bg-slate-100" /></label>
-      <label className="text-sm">{text("원래 통화 *", "Original currency *")}<select required disabled={frozen} value={fields.currency} onChange={e => change("currency", e.target.value)} className="mt-1 w-full rounded border p-2"><option value="">{text("확인 필요", "Needs confirmation")}</option>{supportedCurrencies.map(c => <option key={c}>{c}</option>)}</select></label>
+      <label className="text-sm">{text("원래 통화 *", "Original currency *")}<CurrencySelect required disabled={frozen} value={fields.currency as CurrencyCode | ""} onChange={(code) => change("currency", code)} locale={locale} className="block w-full rounded border p-2" /></label>
       <label className="text-sm">{text("결제수단 이름", "Payment method name")}<input maxLength={100} value={fields.paymentMethod} onChange={e => change("paymentMethod", e.target.value)} className="mt-1 w-full rounded border p-2" /></label>
       <label className="text-sm">{text("원화 명세서 참고값 (선택)", "KRW statement reference (optional)")}<input inputMode="numeric" value={fields.referenceKrw} onChange={e => change("referenceKrw", e.target.value)} className="mt-1 w-full rounded border p-2" /><span className="text-xs text-slate-500">{text("실제 출금액 아님 · 환율로 다시 계산하지 않음", "Not an actual debit; never recalculated using FX")}</span></label>
       <label className="text-sm">{text("계좌·카드 (나중에 선택 가능)", "Account / card (can choose later)")}<select disabled={frozen} value={fields.accountId} onChange={e => change("accountId", e.target.value)} className="mt-1 w-full rounded border p-2"><option value="">{text("아직 선택하지 않음", "Not selected yet")}</option>{data.accounts.filter(a => a.is_active).map(a => <option key={a.id} value={a.id}>{a.name} ({a.currency_code})</option>)}</select></label>

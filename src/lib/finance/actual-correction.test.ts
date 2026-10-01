@@ -26,7 +26,7 @@ test("inline correction preserves the source and does not reuse a stale FX obser
 });
 test("corrections reject invalid dates, money, accounts, categories and incomplete splits", () => {
   const fields = correctionFields(original,data);
-  for (const change of [{ date: "2026-02-30" },{ amount: "4.501" },{ settled: "-1" },{ currency: "EUR" },{ accountId: "other" },{ categoryId: "other" },{ fee: "-1" }]) assert.equal(correctionPayload({ ...fields,...change },data),null);
+  for (const change of [{ date: "2026-02-30" },{ amount: "4.501" },{ settled: "-1" },{ currency: "QQQ" },{ accountId: "other" },{ categoryId: "other" },{ fee: "-1" }]) assert.equal(correctionPayload({ ...fields,...change },data),null);
   assert.equal(correctionPayload({ ...fields,splits: [{ categoryId: "category",amount: "2" },{ categoryId: "category",amount: "2" }] },data),null);
   const result = correctionPayload({ ...fields,splits: [{ categoryId: "category",amount: "2" },{ categoryId: "category",amount: "2.50" }] },data);
   assert.equal(result?.p_actual.category_id,null);
