@@ -20,8 +20,11 @@ import { HelpTip, NavIcon, WorkspaceNav } from "./navigation-ui";
 import { sortWorkspaceLists, type WorkspaceSortOrders } from "@/lib/finance/sorting";
 import { starterCategories } from "@/lib/finance/starter-categories";
 import FirstUseGuide from "./first-use-guide";
+import ReviewFocus from "./review-focus";
+import { reviewItems } from "@/lib/finance/workflow";
+import { localDate } from "@/lib/finance/local-date";
 
-export default function Workspace({ userId, section = "overview" }: { userId: string; section?: WorkspaceSection }) {
+export default function Workspace({ userId, section = "overview", reviewTarget }: { userId: string; section?: WorkspaceSection; reviewTarget?: string }) {
   const { t, locale } = useLanguage();
   const supabase = useMemo(() => createClient(), []);
   const [data, setData] = useState<WorkspaceData | null>(null);
@@ -85,6 +88,7 @@ export default function Workspace({ userId, section = "overview" }: { userId: st
     </section>
   </main>;
 
+  const reviewRecordId = reviewTarget ? reviewItems(data, localDate(data.profile?.timezone)).find(item => item.id === reviewTarget)?.recordId ?? "__resolved__" : undefined;
   return <main className="min-h-screen bg-slate-50 text-slate-950">
     <FirstUseGuide userId={userId} />
     <a href="#page-content" className="sr-only focus:not-sr-only focus:block focus:p-3">{text("본문으로 건너뛰기", "Skip to content")}</a>
@@ -109,8 +113,9 @@ export default function Workspace({ userId, section = "overview" }: { userId: st
       {(section === "review" || section === "calendar") && <ReviewCalendarPanel view={section} data={displayedData!} />}
       {section === "accounts" && <AccountsPanel accounts={displayedData!.accounts} sortOrder={sortOrders.accounts} onSortChange={(value) => changeSort("accounts",value)} userId={userId} supabase={supabase} refresh={refresh} />}
       {section === "categories" && <CategoriesPanel categories={displayedData!.categories} sortOrder={sortOrders.categories} onSortChange={(value) => changeSort("categories",value)} userId={userId} supabase={supabase} refresh={refresh} />}
-      {section === "plans" && <PlansPanel data={displayedData!} sortOrder={sortOrders.plans} onSortChange={(value) => changeSort("plans",value)} userId={userId} supabase={supabase} refresh={refresh} />}
-      {section === "actuals" && <><details className="rounded-xl border border-teal-200 bg-white p-4"><summary className="cursor-pointer font-medium text-teal-800">{text("가져온 자료 검토 · 명세서와 영수증 대조", "Review imports · compare statements and receipts")}</summary><div className="mt-4"><TransactionDraftsPanel data={displayedData!} revision={data.actuals.length} userId={userId} supabase={supabase} blocked={false} refresh={refresh} /></div></details><ActualsPanel data={displayedData!} sortOrder={sortOrders.actuals} onSortChange={(value) => changeSort("actuals",value)} userId={userId} supabase={supabase} refresh={refresh} /></>}
+      {reviewTarget && (section === "plans" || section === "actuals") && <ReviewFocus data={data} target={reviewTarget} section={section} />}
+      {section === "plans" && <PlansPanel reviewRecordId={reviewRecordId} data={displayedData!} sortOrder={sortOrders.plans} onSortChange={(value) => changeSort("plans",value)} userId={userId} supabase={supabase} refresh={refresh} />}
+      {section === "actuals" && <><details className="rounded-xl border border-teal-200 bg-white p-4"><summary className="cursor-pointer font-medium text-teal-800">{text("가져온 자료 검토", "Review imported files")}</summary><div className="mt-4"><TransactionDraftsPanel data={displayedData!} revision={data.actuals.length} userId={userId} supabase={supabase} blocked={false} refresh={refresh} /></div></details><ActualsPanel reviewRecordId={reviewRecordId} data={displayedData!} sortOrder={sortOrders.actuals} onSortChange={(value) => changeSort("actuals",value)} userId={userId} supabase={supabase} refresh={refresh} /></>}
       {section === "drafts" && <TransactionDraftsPanel data={displayedData!} revision={data.actuals.length} userId={userId} supabase={supabase} blocked={false} refresh={refresh} />}
       {section === "transfers" && <TransfersPanel data={displayedData!} sortOrder={sortOrders.transfers} onSortChange={(value) => changeSort("transfers",value)} userId={userId} supabase={supabase} refresh={refresh} />}
       {section === "recurring" && <RecurringPanel data={displayedData!} sortOrder={sortOrders.recurring} onSortChange={(value) => changeSort("recurring",value)} userId={userId} supabase={supabase} refresh={refresh} />}

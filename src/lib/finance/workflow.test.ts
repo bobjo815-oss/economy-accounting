@@ -21,10 +21,46 @@ test("plan status changes at overdue boundary and accounts for partial settlemen
 test("review and calendar show decisions without creating settlements", () => {
   const data = fixture();
   data.actuals.push({ ...data.actuals[0], id: "unmatched", plan_id: null, description: "Unknown charge" });
-  assert.deepEqual(reviewItems(data, "2026-09-22").map((item) => item.reason), ["Overdue plan", "Unmatched settlement"]);
-  assert.deepEqual(reviewItems(data, "2026-09-22").map((item) => item.href), ["/workspace/plans", "/workspace/actuals"]);
+  assert.deepEqual(reviewItems(data, "2026-09-22").map((item) => item.reason), ["Overdue plan"]);
+  assert.deepEqual(reviewItems(data, "2026-09-22").map((item) => item.href), ["/workspace/plans?review=plan-rent"]);
   assert.equal(calendarEvents(data, "2026-09", "2026-09-22").length, 3);
   assert.equal(data.actuals.length, 2);
+});
+
+test("ordinary unplanned income and expenses are valid, not review issues", () => {
+  const data = fixture();
+  data.plans = [];
+  data.actuals[0].plan_id = null;
+  data.actuals.push({ ...data.actuals[0], id: "income", direction: "inflow", entry_kind: "income" });
+  assert.deepEqual(reviewItems(data, "2026-09-22"), []);
+});
+
+test("unfinished corrections link to the exact active transaction, not the whole list", () => {
+  const data = fixture();
+  data.plans = [];
+  data.actualEditProposals = [{ id: "proposal", original_actual_id: "part", status: "pending", fields: {}, updated_at: "2026-09-22" }];
+  const [review] = reviewItems(data, "2026-09-22");
+  assert.equal(review.reason, "Saved correction");
+  assert.equal(review.recordId, "part");
+  assert.equal(review.href, "/workspace/actuals?review=actual-part");
+  data.actualEditProposals[0].status = "discarded";
+  assert.deepEqual(reviewItems(data, "2026-09-22"), []);
+  data.actualEditProposals[0].status = "pending";
+  data.actuals.push({ ...data.actuals[0], id: "reversal", correction_of_id: "part", is_reversal: true });
+  assert.deepEqual(reviewItems(data, "2026-09-22"), []);
+});
+
+test("different snapshot identities with the same estimate do not create a warning", () => {
+  const data = fixture();
+  const plan = data.plans[0];
+  plan.scheduled_date = "2026-10-01";
+  plan.base_currency = "KRW";
+  plan.baseline_fx_snapshot_id = "first";
+  plan.forecast_fx_snapshot_id = "second";
+  data.rates = ["first", "second"].map(id => ({ id, user_id: "owner", from_currency: "GBP", to_currency: "KRW", rate: "1800", observed_on: "2026-09-22", purpose: "forecast", source_label: "test" }));
+  assert.deepEqual(reviewItems(data, "2026-09-22"), []);
+  data.rates[1].rate = "1900";
+  assert.equal(reviewItems(data, "2026-09-22")[0].href, "/workspace/plans?review=fx-rent");
 });
 
 test("future settlement and its later reversal do not rewrite an as-of forecast", () => {

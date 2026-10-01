@@ -36,7 +36,7 @@ export const userGuide: Record<string, GuideCopy> = {
   review: {
     title: ["확인할 항목", "Needs attention"],
     summary: ["기한이 지난 계획이나 추가 확인이 필요한 거래를 모아 봅니다.", "Review overdue plans and transactions that need your attention."],
-    steps: [["각 항목의 사유를 확인한 후 해당 계획 또는 거래에서 직접 수정하세요.", "Check why an item is listed, then edit it from its plan or transaction."], ["이 화면은 문제를 표시할 뿐 금액이나 거래를 자동으로 바꾸지 않습니다.", "This page flags issues but does not automatically change amounts or transactions."], ["확인이 끝난 뒤 거래 목록을 새로고침해 최신 상태를 확인하세요.", "Refresh the transaction list after making changes to see the latest state."]],
+    steps: [["‘확인하기’를 누르면 해당 기록만 노란색으로 강조됩니다. 위 안내에서 확인 사유와 수정 방법을 읽고, 정보 수정 또는 바로 수정을 사용하세요.", "Review opens only the relevant record, highlighted in yellow. Read the reason and instructions, then use Edit details or Edit inline."], ["계획에 연결하지 않은 일반 수입·지출은 문제가 아닙니다. 이 화면은 금액이나 거래를 자동으로 바꾸지 않습니다.", "Ordinary transactions do not need a linked plan. This page never changes amounts or transactions automatically."], ["확인이 끝난 뒤 거래 목록을 새로고침해 최신 상태를 확인하세요.", "Refresh the transaction list after making changes to see the latest state."]],
   },
   reports: {
     title: ["수입·지출 분석", "Income & spending"],
