@@ -5,8 +5,8 @@ export type GuideCopy = { title: [string, string]; summary: [string, string]; st
 export const userGuide: Record<string, GuideCopy> = {
   drafts: {
     title: ["보완 필요 거래", "Needs completion"],
-    summary: ["영수증이나 명세서에서 가져와 아직 거래로 확정하지 않은 내용을 검토합니다.", "Review receipt or statement entries that have not yet been confirmed as transactions."],
-    steps: [["가져온 원본과 제안된 날짜·내용·금액을 확인하고 빠진 정보를 입력하세요.", "Check the imported source and suggested date, description, and amount; fill in missing details."], ["계좌와 분류를 선택하고 합계 및 통화가 맞는지 검토하세요.", "Choose an account and category, then verify totals and currency."], ["모든 내용이 맞을 때만 거래로 저장하세요. 확정 후에도 거래 목록에서 수정할 수 있습니다.", "Save as a transaction only when the details are correct. You can still edit it later in Transactions."]],
+    summary: ["명세서는 가맹점과 결제 총액, 영수증은 구매 품목을 제공합니다. 두 자료를 대조한 뒤 아직 거래 내역에 반영되지 않은 기록을 저장합니다.", "Statements provide merchants and payment totals; receipts provide purchased items. Reconcile both before saving entries to Transactions."],
+    steps: [["명세서의 가맹점명은 품목명이 아닙니다. 영수증 품목을 열어 품목 합계와 영수증 총액을 확인하세요.", "A statement merchant is not an item. Open receipt items and compare their sum with the receipt total."], ["금액·날짜 후보는 제안일 뿐 자동 연결이 아닙니다. 같은 통화와 금액인지 확인한 뒤 자료를 직접 연결하고, 차이는 검토하세요.", "Amount/date candidates are suggestions, not automatic matches. Verify currency and amount, then link sources yourself and review any discrepancy."], ["영수증이 없는 품목은 추정하지 않습니다. 계좌와 분류를 선택하고 맞는 내용만 거래로 저장하세요.", "Items without a receipt are never guessed. Choose an account and category, then save only verified details as a transaction."]],
   },
   overview: {
     title: ["홈", "Home"],

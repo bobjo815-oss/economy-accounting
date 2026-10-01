@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { allocateReceiptItems, effectiveKrwRate, merchantAgrees, receiptField } from "./statement-settlement.ts";
+import { allocateReceiptItems, effectiveKrwRate, merchantAgrees, receiptField, receiptItemTotal } from "./statement-settlement.ts";
 test("derived rate preserves foreign units and cannot manufacture a missing debit", () => {
   assert.equal(effectiveKrwRate(1000,"GBP",18000),"1800.00000000");
   assert.equal(effectiveKrwRate(0,"GBP",18000),null);
@@ -29,4 +29,15 @@ test("unknown items do not silently consume the entire debit; source objects are
   assert.equal(receiptField({valueString:"Synthetic merchant"}),"Synthetic merchant");
   assert.equal(merchantAgrees("Example Shop","EXAMPLE SHOP 123"),true);
   assert.equal(merchantAgrees("Example Shop","Other Shop"),false);
+});
+test("receipt item reconciliation includes discounts and keeps missing line amounts explicit", () => {
+  assert.deepEqual(receiptItemTotal([{ TotalPrice: "14.85" }, { Description: "Discount", TotalPrice: "-1.00" }], "GBP"), {
+    amountMinor: 1385, itemCount: 2, missingAmountCount: 0,
+  });
+  assert.deepEqual(receiptItemTotal([{ TotalPrice: "8.00" }, { Description: "Unknown" }], "GBP"), {
+    amountMinor: 800, itemCount: 2, missingAmountCount: 1,
+  });
+  assert.deepEqual(receiptItemTotal([{ TotalPrice: { valueCurrency: { amount: 4.25 } } }], "GBP"), {
+    amountMinor: 425, itemCount: 1, missingAmountCount: 0,
+  });
 });

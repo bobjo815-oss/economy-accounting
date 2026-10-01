@@ -14,6 +14,20 @@ export function receiptField(value: unknown): string {
   const money = field.valueCurrency as { amount?: unknown } | undefined;
   return String(money?.amount ?? field.valueString ?? field.valueNumber ?? field.content ?? "");
 }
+export type ReceiptItemTotal = { amountMinor: number | null; itemCount: number; missingAmountCount: number };
+/** Sums receipt line totals, including negative discounts, without mutating OCR evidence. */
+export function receiptItemTotal(items: unknown[], currency: CurrencyCode): ReceiptItemTotal {
+  let total = BigInt(0);
+  let missingAmountCount = 0;
+  for (const item of items) {
+    const row = item && typeof item === "object" ? item as Record<string, unknown> : {};
+    const raw = receiptField(row.TotalPrice).replace(/[,£$₩\s]/g, "");
+    const amount = raw ? parseSignedAmountToMinor(raw, currency) : null;
+    if (amount === null) missingAmountCount++;
+    else total += amount;
+  }
+  return { amountMinor: safeMinorNumber(total), itemCount: items.length, missingAmountCount };
+}
 /** Derived display only: largest-remainder allocation; never creates ledger rows. */
 export function allocateReceiptItems(items: unknown[], original: number, currency: CurrencyCode, debit: number) {
   if (!effectiveKrwRate(original, currency, debit) || !items.length) return null;

@@ -1,4 +1,5 @@
 import { parseAmountToMinor, safeMinorNumber, supportedCurrencies, type CurrencyCode } from "./money.ts";
+import { merchantAgrees } from "./statement-settlement.ts";
 
 export type TransactionDraft = {
   id: string; user_id: string; source_key: string; occurred_on: string; description: string;
@@ -34,6 +35,28 @@ export function draftFields(input: { date: string; description: string; amount: 
 export function statementCandidates(draft: TransactionDraft, statements: StatementEvidence[]) {
   return statements.filter(row => row.status === "confirmed" && row.currency_code === draft.currency_code && row.original_amount_minor === draft.original_amount_minor &&
     Math.abs(Date.parse(row.occurred_on) - Date.parse(draft.occurred_on)) <= 3 * 86400000);
+}
+function hasReceiptEvidence(draft: TransactionDraft) {
+  return typeof draft.evidence.receipt_hash === "string" || Array.isArray(draft.evidence.items);
+}
+function listedReceiptStatementCandidate(draft: TransactionDraft, statement: StatementEvidence) {
+  const candidates = draft.evidence.candidate_source_keys;
+  return Array.isArray(candidates) && candidates.includes(statement.source_key);
+}
+function sameReceiptPayment(draft: TransactionDraft, statement: StatementEvidence) {
+  return statement.status !== "canceled" && statement.currency_code === draft.currency_code && statement.original_amount_minor === draft.original_amount_minor &&
+    Math.abs(Date.parse(statement.occurred_on) - Date.parse(draft.occurred_on)) <= 3 * 86400000 && merchantAgrees(statement.description, draft.description);
+}
+export function receiptCandidatesForStatement(statement: StatementEvidence, drafts: TransactionDraft[]) {
+  return drafts.filter(draft => statement.status !== "canceled" && !draft.archived && draft.statement_evidence_id === null && hasReceiptEvidence(draft) &&
+    (listedReceiptStatementCandidate(draft, statement) || sameReceiptPayment(draft, statement)));
+}
+export function receiptCandidatesForDraft(draft: TransactionDraft, statements: StatementEvidence[]) {
+  return statements.filter(statement => statement.status !== "canceled" &&
+    (listedReceiptStatementCandidate(draft, statement) || sameReceiptPayment(draft, statement)));
+}
+export function isUniqueReceiptStatementPair(draft: TransactionDraft, statement: StatementEvidence, drafts: TransactionDraft[], statements: StatementEvidence[]) {
+  return receiptCandidatesForStatement(statement, drafts).length === 1 && receiptCandidatesForDraft(draft, statements).length === 1;
 }
 export function draftForSettlement(draft: TransactionDraft) {
   if (draft.archived || draft.settled_actual_id) return null;

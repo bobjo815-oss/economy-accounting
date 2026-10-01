@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { draftFields, draftForSettlement, statementCandidates, visibleDrafts, type TransactionDraft, type StatementEvidence } from "./transaction-drafts.ts";
+import { draftFields, draftForSettlement, isUniqueReceiptStatementPair, receiptCandidatesForStatement, statementCandidates, visibleDrafts, type TransactionDraft, type StatementEvidence } from "./transaction-drafts.ts";
 const input = { date: "2026-01-02", description: "Example", amount: "4.50", currency: "GBP", direction: "outflow", paymentMethod: "Example card", referenceKrw: "", notes: "" };
 const draft = { id: "draft", occurred_on: input.date, original_amount_minor: 450, currency_code: "GBP", reference_krw_minor: 8000, archived: false, settled_actual_id: null } as TransactionDraft;
 
@@ -36,4 +36,16 @@ test("matches remain candidates; pending, canceled, currency-mismatched and old 
   const row = { id: "row", occurred_on: input.date, status: "confirmed", original_amount_minor: 450, currency_code: "GBP" } as StatementEvidence;
   assert.equal(statementCandidates(draft, [row, { ...row, id: "second" }]).length, 2);
   assert.equal(statementCandidates(draft, [{ ...row, status: "approved" }, { ...row, status: "canceled" }, { ...row, currency_code: "USD" }, { ...row, occurred_on: "2026-02-01" }]).length, 0);
+});
+test("a receipt-backed statement candidate is linked to the receipt draft, never duplicated", () => {
+  const receipt = { ...draft, id: "receipt", description: "Morrisons", occurred_on: "2026-09-30", original_amount_minor: 1716, currency_code: "GBP", statement_evidence_id: null,
+    evidence: { receipt_hash: "private-receipt-hash", items: [{ Description: "Example item" }], candidate_source_keys: ["statement-file:3"] } } as TransactionDraft;
+  const statement = { id: "statement", source_key: "statement-file:3", description: "MORRISONS SHEFFIELD -", occurred_on: "2026-09-30", status: "approved", original_amount_minor: 1716, currency_code: "GBP" } as StatementEvidence;
+  assert.deepEqual(receiptCandidatesForStatement(statement, [receipt]), [receipt]);
+  assert.equal(isUniqueReceiptStatementPair(receipt, statement, [receipt], [statement]), true);
+  const duplicateReceipt = { ...receipt, id: "receipt-copy" };
+  assert.equal(isUniqueReceiptStatementPair(receipt, statement, [receipt, duplicateReceipt], [statement]), false);
+  const secondStatement = { ...statement, id: "statement-copy", source_key: "statement-file:4" };
+  assert.equal(isUniqueReceiptStatementPair(receipt, statement, [receipt], [statement, secondStatement]), false);
+  assert.equal(receiptCandidatesForStatement({ ...statement, status: "canceled" }, [receipt]).length, 0);
 });
