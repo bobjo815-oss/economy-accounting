@@ -4,17 +4,26 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "node scripts/copy-ocr-assets.mjs",
     "build": "next build",
-    "test": "node --test src/lib/finance/*.test.ts src/lib/auth/*.test.ts",
+    "prebuild": "node scripts/copy-ocr-assets.mjs",
+    "test": "node --test scripts/receipt-evaluation.test.mjs src/lib/finance/*.test.ts src/lib/auth/*.test.ts src/lib/receipt/*.test.ts src/lib/statement/*.test.ts",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.116.0",
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/kor": "1.0.0",
+    "fflate": "0.8.3",
     "next": "16.3.5",
+    "pdfjs-dist": "6.3.289",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "read-excel-file": "9.3.10",
+    "saxen": "11.2.0",
+    "tesseract.js": "7.0.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {

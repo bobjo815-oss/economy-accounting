@@ -5,7 +5,7 @@ import type {
 } from "./records";
 
 export async function loadWorkspace(supabase: SupabaseClient, userId: string): Promise<WorkspaceData> {
-  const [profile, accounts, categories, rates, plans, actuals, splits, transfers, merchantRules, recurringTemplates] = await Promise.all([
+  const [profile, accounts, categories, rates, plans, actuals, splits, transfers, merchantRules, recurringTemplates, proposals] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
     supabase.from("accounts").select("*").eq("user_id", userId).order("name"),
     supabase.from("categories").select("*").eq("user_id", userId).order("sort_order"),
@@ -16,11 +16,13 @@ export async function loadWorkspace(supabase: SupabaseClient, userId: string): P
     supabase.from("transfers").select("*").eq("user_id", userId).order("occurred_on", { ascending: false }),
     supabase.from("merchant_rules").select("*").eq("user_id", userId).order("priority"),
     supabase.from("recurring_templates").select("*").eq("user_id", userId).order("next_date"),
+    supabase.from("actual_edit_proposals").select("id,original_actual_id,fields,status,updated_at").eq("user_id",userId).eq("status","pending"),
   ]);
-  if ([profile, accounts, categories, rates, plans, actuals, splits, transfers, merchantRules, recurringTemplates].some((result) => result.error)) {
+  if ([profile, accounts, categories, rates, plans, actuals, splits, transfers, merchantRules, recurringTemplates, proposals].some((result) => result.error)) {
     throw new Error("The finance workspace could not load. Check the database setup and your connection.");
   }
   return {
+    actualEditProposals: proposals.data ?? [],
     profile: profile.data as ProfileRow | null,
     accounts: (accounts.data ?? []) as AccountRow[],
     categories: (categories.data ?? []) as CategoryRow[],

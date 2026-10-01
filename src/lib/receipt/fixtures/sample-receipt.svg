@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620">
+  <rect width="900" height="620" fill="#ffffff" />
+  <g fill="#111111" font-family="Arial, sans-serif">
+    <text x="70" y="90" font-size="48" font-weight="700">SAMPLE MARKET</text>
+    <text x="70" y="155" font-size="32">21/09/2026 18:42</text>
+    <text x="70" y="245" font-size="32">Milk  £2.50</text>
+    <text x="70" y="300" font-size="32">Coffee  £10.00</text>
+    <text x="70" y="405" font-size="34" font-weight="700">TOTAL  GBP  £12.50</text>
+    <text x="70" y="500" font-size="26">Thank you for shopping with us</text>
+  </g>
+</svg>

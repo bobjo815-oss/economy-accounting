@@ -79,6 +79,7 @@ export type ActualRow = {
   settlement_status: "pending_settlement" | "settled" | "voided";
   is_reversal: boolean;
   correction_of_id: string | null;
+  replacement_of_id?: string | null;
   created_at: string;
 };
 
@@ -130,6 +131,7 @@ export type RecurringTemplateRow = {
 };
 
 export type WorkspaceData = {
+  actualEditProposals?: { id: string; original_actual_id: string; fields: unknown; status: string; updated_at: string }[];
   profile: ProfileRow | null;
   accounts: AccountRow[];
   categories: CategoryRow[];

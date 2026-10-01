@@ -13,7 +13,10 @@
 
 The initial schema and Row Level Security policies are in
 `supabase/migrations/20260922201832_initial_finance_schema.sql`, followed by
-`20260922202104_fix_function_search_path.sql`. The schema enables RLS on all
+`20260922202104_fix_function_search_path.sql`. The pending
+`20260928172156_validate_fx_snapshot_links.sql` migration checks that linked
+rate snapshots have the transaction's currency pair and intended purpose.
+The schema enables RLS on all
 12 application tables, restricts rows to their owner, and makes settlements and
 rate snapshots append-only. Configure Auth and disable public sign-ups for a
 single-owner deployment. Verify owner isolation in your target environment.
@@ -31,7 +34,9 @@ older synthetic browser-local demo and is not the private ledger. Do not enter
 real financial records there.
 
 The app is configured for no-AI operation. It has no model provider connection,
-no receipt storage, and no automatic bank or FX imports. Use only synthetic data
+no receipt storage, and no automatic bank or statement synchronization. The plan
+form fetches public reference FX quotes; it saves a rate snapshot only when the
+user submits the plan. Use only synthetic data
 until backup/export and the full browser workflow are verified. `pnpm test`,
 `pnpm lint`, `tsc --noEmit`, and `pnpm build` validate the local code.
 

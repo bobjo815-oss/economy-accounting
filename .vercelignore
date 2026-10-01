@@ -2,3 +2,15 @@
 .vercel-cli-temp/
 .next/
 node_modules/
+supabase/.temp/
+*.tsbuildinfo
+/data/
+/exports/
+/backups/
+/receipts/
+*.csv
+*.tsv
+*.xlsx
+*.dump
+*.log
+*.pem

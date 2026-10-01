@@ -36,6 +36,16 @@ test("forecast begins at selected balances and adds only outstanding plans", () 
   assert.equal(result.events.length, 1);
 });
 
+test("forecast horizons include one month and one year with calendar-safe month ends", () => {
+  const data = fixture();
+  data.plans[0].scheduled_date = "2026-02-28";
+  assert.equal(forecast(data, "2026-01-31", 1, null).events.length, 1);
+  data.plans[0].scheduled_date = "2027-01-30";
+  assert.equal(forecast(data, "2026-01-31", 12, null).events.length, 1);
+  data.plans[0].scheduled_date = "2026-03-01";
+  assert.equal(forecast(data, "2026-01-31", 1, null).events.length, 0);
+});
+
 test("monthly budget keeps forecast and actual columns separate", () => {
   const data = fixture();
   const september = monthlyCategoryResults(data, "2026-09");

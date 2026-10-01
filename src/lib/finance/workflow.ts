@@ -18,14 +18,14 @@ export function planState(plan: PlanRow, actuals: ActualRow[], asOf: string) {
 export function reviewItems(data: WorkspaceData, asOf: string) {
   const unmatched = data.actuals.filter((actual) => actual.settlement_status === "settled" && !actual.is_reversal && !actual.plan_id &&
     !data.actuals.some((item) => item.correction_of_id === actual.id)).map((actual) => ({
-      id: `actual-${actual.id}`, date: actual.occurred_on, title: actual.description, reason: "Unmatched settlement", href: "#actuals",
+      id: `actual-${actual.id}`, date: actual.occurred_on, title: actual.description, reason: "Unmatched settlement", href: "/workspace/actuals",
     }));
   const overdue = data.plans.filter((plan) => ["overdue", "partial · overdue"].includes(planState(plan, data.actuals, asOf))).map((plan) => ({
-    id: `plan-${plan.id}`, date: plan.scheduled_date, title: plan.title, reason: "Overdue plan", href: "#plans",
+    id: `plan-${plan.id}`, date: plan.scheduled_date, title: plan.title, reason: "Overdue plan", href: "/workspace/plans",
   }));
   const fx = data.plans.filter((plan) => plan.status !== "canceled" && plan.currency_code !== plan.base_currency &&
     plan.baseline_fx_snapshot_id !== plan.forecast_fx_snapshot_id && planState(plan, data.actuals, asOf) !== "completed").map((plan) => ({
-      id: `fx-${plan.id}`, date: plan.scheduled_date, title: plan.title, reason: "FX assumption changed", href: "#plans",
+      id: `fx-${plan.id}`, date: plan.scheduled_date, title: plan.title, reason: "FX assumption changed", href: "/workspace/plans",
     }));
   return [...unmatched, ...overdue, ...fx].sort((a, b) => a.date.localeCompare(b.date));
 }

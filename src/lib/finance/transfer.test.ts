@@ -14,3 +14,12 @@ test("only an explicit transfer fee is household spending", () => {
   const transfer = { from_account_id: "a", to_account_id: "b", from_amount_minor: 10000, to_amount_minor: 10000, explicit_fee_minor: 150 };
   assert.equal(transferCashFlowMinor(transfer), BigInt(-150));
 });
+
+test("the guide's GBP100 example charges GBP101 and receives GBP100 with a separate GBP1 fee", () => {
+  const example = { from_account_id: "example-savings", to_account_id: "example-current", from_amount_minor: 10000, to_amount_minor: 10000, explicit_fee_minor: 100 };
+  const [sent, received] = transferLegs(example);
+  assert.equal(sent.amountMinor, BigInt(-10100));
+  assert.equal(received.amountMinor, BigInt(10000));
+  assert.equal(sent.amountMinor + received.amountMinor, BigInt(-100));
+  assert.equal(transferCashFlowMinor(example), BigInt(-100));
+});

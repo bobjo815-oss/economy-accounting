@@ -22,6 +22,7 @@ test("review and calendar show decisions without creating settlements", () => {
   const data = fixture();
   data.actuals.push({ ...data.actuals[0], id: "unmatched", plan_id: null, description: "Unknown charge" });
   assert.deepEqual(reviewItems(data, "2026-09-22").map((item) => item.reason), ["Overdue plan", "Unmatched settlement"]);
+  assert.deepEqual(reviewItems(data, "2026-09-22").map((item) => item.href), ["/workspace/plans", "/workspace/actuals"]);
   assert.equal(calendarEvents(data, "2026-09", "2026-09-22").length, 3);
   assert.equal(data.actuals.length, 2);
 });
@@ -33,4 +34,20 @@ test("future settlement and its later reversal do not rewrite an as-of forecast"
   data.actuals.push({ ...data.actuals[0], id: "reverse", occurred_on: "2026-10-03", is_reversal: true, correction_of_id: "part" });
   assert.equal(paidOriginalMinor(data.plans[0], data.actuals, "2026-10-02"), BigInt(4000));
   assert.equal(paidOriginalMinor(data.plans[0], data.actuals, "2026-10-03"), BigInt(0));
+});
+
+test("several partial payments complete a plan, while a reversal reopens it", () => {
+  const data = fixture();
+  data.actuals.push({ ...data.actuals[0], id: "remaining", original_amount_minor: 6000, settlement_amount_minor: 6000 });
+  assert.equal(planState(data.plans[0], data.actuals, "2026-09-22"), "completed");
+  assert.equal(reviewItems(data, "2026-09-22").some((item) => item.reason === "Overdue plan"), false);
+  data.actuals.push({ ...data.actuals[1], id: "reversal", is_reversal: true, correction_of_id: "remaining" });
+  assert.equal(planState(data.plans[0], data.actuals, "2026-09-22"), "partial · overdue");
+});
+
+test("unsettled payments do not mark a plan as completed", () => {
+  const data = fixture();
+  data.actuals[0].original_amount_minor = 10000;
+  data.actuals[0].settlement_status = "pending_settlement";
+  assert.equal(planState(data.plans[0], data.actuals, "2026-09-22"), "overdue");
 });

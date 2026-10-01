@@ -2,7 +2,7 @@ import { convertToBaseMinor } from "./money.ts";
 import { planCosts } from "./plan-calculation.ts";
 import { transferLegs } from "./transfer.ts";
 import { paidOriginalMinor } from "./workflow.ts";
-import type { AccountRow, ActualRow, WorkspaceData } from "./records.ts";
+import type { AccountRow, ActualRow, CashDirection, EntryKind, WorkspaceData } from "./records.ts";
 
 export function actualCashEffect(actual: ActualRow) {
   const amount = BigInt(actual.settlement_amount_minor);
@@ -29,7 +29,13 @@ export function accountBalances(data: Pick<WorkspaceData, "accounts" | "actuals"
 
 export type ForecastPoint = { date: string; title: string; effectMinor: bigint; closingMinor: bigint };
 
-export function forecast(data: WorkspaceData, asOf: string, horizonMonths: 3 | 6, accountId: string | null) {
+function addMonthsClamped(date: Date, months: number) {
+  const targetFirst = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
+  const targetLastDay = new Date(Date.UTC(targetFirst.getUTCFullYear(), targetFirst.getUTCMonth() + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(targetFirst.getUTCFullYear(), targetFirst.getUTCMonth(), Math.min(date.getUTCDate(), targetLastDay)));
+}
+
+export function forecast(data: WorkspaceData, asOf: string, horizonMonths: 1 | 3 | 6 | 12, accountId: string | null) {
   const baseCurrency = data.profile?.base_currency ?? "KRW";
   const validAsOf = /^\d{4}-\d{2}-\d{2}$/.test(asOf) && !Number.isNaN(Date.parse(`${asOf}T00:00:00Z`))
     ? asOf : new Date().toISOString().slice(0, 10);
@@ -38,8 +44,7 @@ export function forecast(data: WorkspaceData, asOf: string, horizonMonths: 3 | 6
     account.is_active && account.currency_code === baseCurrency && (accountId === null || account.id === accountId));
   let closing = selectedAccounts.reduce((sum, account) => sum + (balances.get(account.id) ?? BigInt(0)), BigInt(0));
   const start = closing;
-  const horizon = new Date(`${validAsOf}T00:00:00Z`);
-  horizon.setUTCMonth(horizon.getUTCMonth() + horizonMonths);
+    const horizon = addMonthsClamped(new Date(`${validAsOf}T00:00:00Z`), horizonMonths);
   const lastDate = horizon.toISOString().slice(0, 10);
   const events: ForecastPoint[] = [];
   const eligible = data.plans.filter((plan) => plan.status !== "canceled" && plan.base_currency === baseCurrency &&
@@ -97,4 +102,48 @@ export function monthlyCategoryResults(data: WorkspaceData, month: string) {
     }
   }
   return { totals, unconvertedActuals };
+}
+
+export type MonthlyCompositionRow = {
+  key: string;
+  categoryId: string | null;
+  entryKind: EntryKind;
+  label: string | null;
+  amountMinor: bigint;
+};
+
+/** Returns settled, base-currency cash composition without mixing currencies or double-counting corrections. */
+export function monthlyActualComposition(data: WorkspaceData, month: string, direction: CashDirection, groupBy: "category" | "description" = "category") {
+  const reversedIds = new Set(data.actuals.filter((actual) => actual.correction_of_id).map((actual) => actual.correction_of_id));
+  const totals = new Map<string, MonthlyCompositionRow>();
+  let unconvertedActuals = 0;
+  for (const actual of data.actuals) {
+    if (actual.is_reversal || reversedIds.has(actual.id) || actual.settlement_status !== "settled" ||
+      actual.direction !== direction || !actual.occurred_on.startsWith(month)) continue;
+    if (actual.settlement_currency !== (data.profile?.base_currency ?? "KRW")) {
+      unconvertedActuals++;
+      continue;
+    }
+    const amount = direction === "outflow"
+      ? BigInt(actual.settlement_amount_minor) + BigInt(actual.explicit_fee_minor)
+      : BigInt(actual.settlement_amount_minor) - BigInt(actual.explicit_fee_minor);
+    if (amount <= BigInt(0)) continue;
+    const splits = data.splits.filter((split) => split.actual_transaction_id === actual.id);
+    const allocations = splits.length === 0
+      ? [{ categoryId: actual.category_id, amountMinor: amount }]
+      : splits.map((split, index) => ({
+          categoryId: split.category_id,
+          amountMinor: index === splits.length - 1
+            ? amount - splits.slice(0, index).reduce((sum, prior) => sum + amount * BigInt(prior.original_amount_minor) / BigInt(actual.original_amount_minor), BigInt(0))
+            : amount * BigInt(split.original_amount_minor) / BigInt(actual.original_amount_minor),
+        }));
+    for (const allocation of allocations) {
+      const label = groupBy === "description" ? actual.description : null;
+      const key = groupBy === "description" ? `description:${actual.description}` : `${allocation.categoryId ?? "uncategorized"}:${direction === "inflow" ? actual.entry_kind : "expense"}`;
+      const current = totals.get(key) ?? { key, categoryId: allocation.categoryId, entryKind: actual.entry_kind, label, amountMinor: BigInt(0) };
+      current.amountMinor += allocation.amountMinor;
+      totals.set(key, current);
+    }
+  }
+  return { rows: [...totals.values()].sort((a, b) => a.amountMinor > b.amountMinor ? -1 : a.amountMinor < b.amountMinor ? 1 : a.key.localeCompare(b.key)), unconvertedActuals };
 }

@@ -52,7 +52,7 @@ function suggestCategory(title: string, direction: Direction) {
   if (direction === "Inflow") return "Income";
   if (/tuition|ucl|uos|학비|등록금|수업료/.test(value)) return "Academic";
   if (/rent|숙소|기숙사|housing|월세/.test(value)) return "Housing";
-  if (/tesco|sainsbury|food|grocery|식비|장보기|먹/.test(value)) return "Living";
+  if (/market|food|grocery|식비|장보기|먹/.test(value)) return "Living";
   if (/laptop|desk|stationery|supplies|준비물|비품|amazon/.test(value)) return "Supplies";
   if (/loan|interest|repayment|대출|이자|상환/.test(value)) return "Financial / Loan";
   return "Other";
@@ -149,7 +149,7 @@ export default function Home() {
       <div className="mx-auto flex min-h-screen max-w-[1440px]">
         <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white p-6 lg:block">
           <div className="text-sm font-semibold tracking-tight">Study Finance</div>
-          <p className="mt-1 text-xs text-slate-500">Private cash-flow tracker</p>
+          <p className="mt-1 text-xs text-slate-500">Browser-only demo</p>
           <nav className="mt-10 space-y-1 text-sm">
             <a className="block rounded-lg bg-slate-900 px-3 py-2 font-medium text-white" href="#overview">Overview</a>
             <a className="block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100" href="#quick-entry">Quick entry</a>
@@ -173,6 +173,10 @@ export default function Home() {
               <a href="/login" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700">Sign in</a>
             </div>
           </header>
+
+          <p role="note" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+            데모 전용입니다. 실제 금융정보를 입력하지 마세요. 입력 내용은 계정 보호나 백업 없이 이 브라우저에만 저장됩니다. / Demo only. Do not enter real financial data. Entries stay in this browser without account protection or backup.
+          </p>
 
           <div id="overview" className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[
@@ -215,7 +219,7 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
-                <input value={title} onChange={(event) => handleTitleChange(event.target.value)} placeholder="예: Tesco groceries" className="w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-white/50" />
+                <input value={title} onChange={(event) => handleTitleChange(event.target.value)} placeholder="예: Market groceries" className="w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-white/50" />
                 <div className="grid grid-cols-[1fr_88px] gap-2">
                   <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" placeholder="금액" className="w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-white/50" />
                   <select value={currency} onChange={(event) => setCurrency(event.target.value as CurrencyCode)} className="rounded-lg border border-white/15 bg-slate-800 px-2 py-2.5 text-sm">
